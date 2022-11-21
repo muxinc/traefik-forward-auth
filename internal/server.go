@@ -3,6 +3,7 @@ package tfa
 import (
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/containous/traefik/v2/pkg/rules"
 	"github.com/sirupsen/logrus"
@@ -222,6 +223,13 @@ func (s *Server) authRedirect(logger *logrus.Entry, w http.ResponseWriter, r *ht
 		logger.WithField("error", err).Error("Error generating nonce")
 		http.Error(w, "Service unavailable", 503)
 		return
+	}
+
+	// clean existing CSRF cookie
+	for _, v := range r.Cookies() {
+		if strings.Contains(v.Name, config.CSRFCookieName) {
+			http.SetCookie(w, ClearCSRFCookie(r, v))
+		}
 	}
 
 	// Set the CSRF cookie
